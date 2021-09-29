@@ -15,7 +15,7 @@ def torch2surface2numpy(surface_tensor, nvDwn, rawFrame, w gpuID):
     #surface_rgb = nvc.Surface.Make(nvc.PixelFormat.RGB, w, h, gpuID)
     #surface_rgb.PlanePtr().Import(surface_tensor.data_ptr(), w * 3, gpuID)
     #nvDwn = nvc.PySurfaceDownloader(hwidth, hheight, nvc.PixelFormat.RGB, gpuID)
-    #rawFrame = np.ndarray(shape=(), dtype=np.uint8)
+    #rawFrame = np.ndarray(shape=(surface_tensor.HostSize()), dtype=np.uint8)
     success = nvDwn.DownloadSingleSurface(surface_tensor, rawFrame)
     if success:
         return rawFrame
