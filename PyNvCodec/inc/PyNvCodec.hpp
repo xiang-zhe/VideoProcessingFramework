@@ -2,7 +2,7 @@
  * Copyright 2020 NVIDIA Corporation
  * Copyright 2021 Kognia Sports Intelligence
  * Copyright 2021 Videonetics Technology Private Limited
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -74,14 +74,31 @@ public:
                   CUcontext ctx, CUstream str);
 
   PyFrameUploader(uint32_t width, uint32_t height, Pixel_Format format,
-                  size_t ctx, size_t str) : 
+                  size_t ctx, size_t str) :
     PyFrameUploader(width, height, format, (CUcontext)ctx, (CUstream)str) {}
 
   Pixel_Format GetFormat();
 
   std::shared_ptr<Surface> UploadSingleFrame(py::array_t<uint8_t> &frame);
-  
+
   std::shared_ptr<Surface> UploadSingleFrame(py::array_t<float> &frame);
+};
+
+class PyBufferUploader {
+  std::unique_ptr<UploadBuffer> uploader;
+  uint32_t elem_size, num_elems;
+
+public:
+  PyBufferUploader(uint32_t elemSize, uint32_t numElems, uint32_t gpu_ID);
+
+  PyBufferUploader(uint32_t elemSize, uint32_t numElems, CUcontext ctx,
+                   CUstream str);
+
+  PyBufferUploader(uint32_t elemSize, uint32_t numElems,
+                   size_t ctx, size_t str) : 
+    PyBufferUploader(elemSize, numElems, (CUcontext)ctx, (CUstream)str) {}
+
+  std::shared_ptr<CudaBuffer> UploadSingleBuffer(py::array_t<uint8_t> &buffer);
 };
 
 class PySurfaceDownloader {
@@ -106,6 +123,24 @@ public:
                              py::array_t<uint8_t> &frame);
   bool DownloadSingleSurface(std::shared_ptr<Surface> surface,
                              py::array_t<float> &frame);
+};
+
+class PyCudaBufferDownloader {
+  std::unique_ptr<DownloadCudaBuffer> upDownloader;
+  uint32_t elem_size, num_elems;
+
+public:
+  PyCudaBufferDownloader(uint32_t elemSize, uint32_t numElems, uint32_t gpu_ID);
+
+  PyCudaBufferDownloader(uint32_t elemSize, uint32_t numElems, CUcontext ctx,
+                         CUstream str);
+
+  PyCudaBufferDownloader(uint32_t elemSize, uint32_t numElems,
+                         size_t ctx, size_t str) : 
+    PyCudaBufferDownloader(elemSize, numElems, (CUcontext)ctx, (CUstream)str) {}
+
+  bool DownloadSingleCudaBuffer(std::shared_ptr<CudaBuffer> buffer,
+                                py::array_t<uint8_t> &np_array);
 };
 
 class PySurfaceConverter {
@@ -273,8 +308,30 @@ public:
   std::shared_ptr<Surface> DecodeSurfaceFromPacket(py::array_t<uint8_t> &packet,
                                                    py::array_t<uint8_t> &sei);
 
-  std::shared_ptr<Surface>
-  DecodeSurfaceFromPacket(py::array_t<uint8_t> &packet);
+  std::shared_ptr<Surface> DecodeSurfaceFromPacket(PacketData &enc_packet_data,
+                                                   py::array_t<uint8_t> &packet,
+                                                   py::array_t<uint8_t> &sei);
+
+  std::shared_ptr<Surface> DecodeSurfaceFromPacket(py::array_t<uint8_t> &packet,
+                                                   py::array_t<uint8_t> &sei,
+                                                   PacketData &pkt_data);
+
+  std::shared_ptr<Surface> DecodeSurfaceFromPacket(PacketData &enc_packet_data,
+                                                   py::array_t<uint8_t> &packet,
+                                                   py::array_t<uint8_t> &sei,
+                                                   PacketData &pkt_data);
+
+  std::shared_ptr<Surface> DecodeSurfaceFromPacket(py::array_t<uint8_t> &packet);
+
+  std::shared_ptr<Surface> DecodeSurfaceFromPacket(PacketData &enc_packet_data,
+                                                   py::array_t<uint8_t> &packet);
+
+  std::shared_ptr<Surface> DecodeSurfaceFromPacket(py::array_t<uint8_t> &packet,
+                                                   PacketData &pkt_data);
+
+  std::shared_ptr<Surface> DecodeSurfaceFromPacket(PacketData &enc_packet_data,
+                                                   py::array_t<uint8_t> &packet,
+                                                   PacketData &pkt_data);
 
   std::shared_ptr<Surface> DecodeSingleSurface(py::array_t<uint8_t> &sei);
 
@@ -330,16 +387,50 @@ public:
                              py::array_t<uint8_t> &sei);
 
   bool DecodeFrameFromPacket(py::array_t<uint8_t> &frame,
+                             PacketData &enc_packet_data,
+                             py::array_t<uint8_t> &packet,
+                             py::array_t<uint8_t> &sei);
+
+  bool DecodeFrameFromPacket(py::array_t<uint8_t> &frame,
+                             py::array_t<uint8_t> &packet,
+                             py::array_t<uint8_t> &sei,
+                             PacketData &pkt_data);
+
+  bool DecodeFrameFromPacket(py::array_t<uint8_t> &frame,
+                             PacketData &enc_packet_data,
+                             py::array_t<uint8_t> &packet,
+                             py::array_t<uint8_t> &sei,
+                             PacketData &pkt_data);
+
+  bool DecodeFrameFromPacket(py::array_t<uint8_t> &frame,
                              py::array_t<uint8_t> &packet);
+
+  bool DecodeFrameFromPacket(py::array_t<uint8_t> &frame,
+                             PacketData &enc_packet_data,
+                             py::array_t<uint8_t> &packet);
+
+  bool DecodeFrameFromPacket(py::array_t<uint8_t> &frame,
+                             py::array_t<uint8_t> &packet,
+                             PacketData &pkt_data);
+
+  bool DecodeFrameFromPacket(py::array_t<uint8_t> &frame,
+                             PacketData &enc_packet_data,
+                             py::array_t<uint8_t> &packet,
+                             PacketData &pkt_data);
 
   bool FlushSingleFrame(py::array_t<uint8_t> &frame);
 
+  bool FlushSingleFrame(py::array_t<uint8_t> &frame, PacketData &pkt_data);
+
   std::shared_ptr<Surface> FlushSingleSurface();
+
+  std::shared_ptr<Surface> FlushSingleSurface(PacketData &pkt_data);
 
 private:
   bool DecodeSurface(struct DecodeContext &ctx);
 
   Surface *getDecodedSurfaceFromPacket(py::array_t<uint8_t> *pPacket,
+                                       PacketData *p_packet_data = nullptr,
                                        bool no_eos = false);
 };
 
@@ -380,11 +471,11 @@ public:
               int gpuOrdinal, Pixel_Format format = NV12, bool verbose = false);
 
   PyNvEncoder(const std::map<std::string, std::string> &encodeOptions,
-              CUcontext ctx, CUstream str, Pixel_Format format = NV12, 
+              CUcontext ctx, CUstream str, Pixel_Format format = NV12,
               bool verbose = false);
 
   PyNvEncoder(const std::map<std::string, std::string> &encodeOptions,
-              size_t ctx, size_t str, Pixel_Format format = NV12, 
+              size_t ctx, size_t str, Pixel_Format format = NV12,
               bool verbose = false):
     PyNvEncoder(encodeOptions, (CUcontext)ctx, (CUstream)str, format, verbose){}
 
